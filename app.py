@@ -25,7 +25,7 @@ Upload a spreadsheet file (Excel or CSV) to create visual representations of eac
 # Sidebar for display options
 st.sidebar.header("Display Options")
 st.sidebar.subheader("Chart Options")
-show_average_line = st.sidebar.checkbox("Show Average Line", value=True)
+show_average_line = st.sidebar.checkbox("Show Average Line", value=False)
 show_average_bar = st.sidebar.checkbox("Show Average as Bar", value=False)
 average_line_color = "#004080"  # Dark blue color for the average line
 
@@ -489,3 +489,4 @@ This application helps teachers and parents visualize student performance across
 Upload your spreadsheet data to generate individual bar charts for each student, providing a clear visual 
 representation of their test scores and percentages.
 """)
+
