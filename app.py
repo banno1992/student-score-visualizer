@@ -37,12 +37,25 @@ st.sidebar.subheader("Summary Options")
 show_summary_table = st.sidebar.checkbox("Show Summary Table", value=True)
 show_individual_summary = st.sidebar.checkbox("Show Individual Student Summary", value=True)
 
-# File upload section
-st.header("Upload Data")
-uploaded_file = st.file_uploader(
-    "Upload your spreadsheet file (Excel or CSV)", 
-    type=["xlsx", "xls", "csv"]
-)
+# Data input section
+st.header("Input Data")
+
+# Create tabs for different input methods
+input_tab1, input_tab2 = st.tabs(["Upload File", "Paste from Spreadsheet"])
+
+with input_tab1:
+    uploaded_file = st.file_uploader(
+        "Upload your spreadsheet file (Excel or CSV)", 
+        type=["xlsx", "xls", "csv"]
+    )
+
+with input_tab2:
+    csv_text = st.text_area(
+        "Paste data directly from your spreadsheet (tab-separated):",
+        height=200,
+        placeholder="Student\tMath\tPercentage\tScience\tPercentage\nJohn Smith\tMath\t85\tScience\t90"
+    )
+    process_csv_button = st.button("Process Pasted Data")
 
 # Function to validate the data format
 def validate_data(df):
@@ -277,13 +290,31 @@ def get_charts_zip_download_link(charts, filename="student_charts.zip"):
     return href
 
 # Main application logic
+df = None
+data_source = None
+
+# Check for uploaded file
 if uploaded_file is not None:
     try:
-        # Try to read the uploaded file
         if uploaded_file.name.endswith(('.xlsx', '.xls')):
             df = pd.read_excel(uploaded_file)
-        else:  # CSV
+        else:
             df = pd.read_csv(uploaded_file)
+        data_source = "file"
+    except Exception as e:
+        st.error(f"Error reading uploaded file: {str(e)}")
+
+# Check for pasted spreadsheet data (tab-separated)
+elif process_csv_button and csv_text.strip():
+    try:
+        df = pd.read_csv(io.StringIO(csv_text), sep='\t')
+        data_source = "paste"
+    except Exception as e:
+        st.error(f"Error parsing pasted data: {str(e)}")
+        st.info("Please make sure you're pasting data directly from a spreadsheet (tab-separated values).")
+
+if df is not None:
+    try:
         
         # Display the raw data
         st.header("Raw Data Preview")
@@ -419,33 +450,35 @@ if uploaded_file is not None:
                 st.error("No charts could be generated from the data. Please check your data format.")
     
     except Exception as e:
-        st.error(f"An error occurred while processing the file: {str(e)}")
-        st.info("Please make sure your file is a valid Excel or CSV file with the appropriate data structure.")
+        st.error(f"An error occurred while processing the data: {str(e)}")
+        st.info("Please make sure your data is properly formatted with the appropriate structure.")
 
 else:
-    # Display instructions if no file is uploaded
+    # Display instructions if no data is provided
     st.info("""
     ### How to use this application:
     
-    1. Prepare your spreadsheet file with student test scores. The file should have:
+    1. Prepare your data with student test scores. The data should have:
        - First column with student names
        - Alternating columns with subject names and percentages
        
-    2. Upload your Excel (.xlsx, .xls) or CSV file using the uploader above.
+    2. Either:
+       - **Upload a file:** Use the "Upload File" tab to upload an Excel (.xlsx, .xls) or CSV file
+       - **Paste from spreadsheet:** Use the "Paste from Spreadsheet" tab to copy and paste data directly from Excel/Google Sheets, then click "Process Pasted Data"
     
     3. The application will automatically detect the structure of your data.
        If it cannot, you will be prompted to select the appropriate columns.
        
     4. Review the generated charts for each student.
     
-    5. Download individual charts or all charts as a PDF.
+    5. Download individual charts or all charts as a PDF or ZIP.
     
     ### Example data format:
     
     | Student     | Chemistry | Percentage | Biology | Percentage |
     |-------------|-----------|------------|---------|------------|
-    | John Smith  | 8         | 80         | 9       | 100        |
-    | Jane Cole   | 7         | 70         | 8       | 89         |
+    | John Smith  | Chemistry | 80         | Biology | 100        |
+    | Jane Cole   | Chemistry | 70         | Biology | 89         |
     """)
 
 # Add a footer with some information
